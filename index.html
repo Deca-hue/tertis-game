@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind Tetris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            overflow: hidden;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #333;
+            box-sizing: border-box;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-rows: repeat(15, 30px);
+            grid-template-columns: repeat(10, 30px);
+            gap: 1px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .game-container {
+            width: fit-content;
+            margin: 0 auto;
+        }
+        
+        /* For iframe embedding */
+        body.iframe-mode {
+            padding: 0;
+            margin: 0;
+        }
+        body.iframe-mode .game-container {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="game-container">
+        <h1 class="text-4xl font-bold mb-6 text-center">Tailwind Tetris</h1>
+        
+        <div class="flex gap-8 items-start">
+            <div class="grid bg-gray-800" id="game-grid"></div>
+            
+            <div class="flex flex-col gap-6">
+                <div class="bg-gray-800 p-4 rounded">
+                    <h2 class="text-xl font-semibold mb-2">Next Piece</h2>
+                    <div class="grid bg-gray-800" id="next-piece-grid" style="grid-template-rows: repeat(4, 30px); grid-template-columns: repeat(4, 30px);"></div>
+                </div>
+                
+                <div class="bg-gray-800 p-4 rounded">
+                    <h2 class="text-xl font-semibold mb-2">Score</h2>
+                    <p class="text-2xl" id="score">0</p>
+                </div>
+                
+                <div class="bg-gray-800 p-4 rounded">
+                    <h2 class="text-xl font-semibold mb-2">Level</h2>
+                    <p class="text-2xl" id="level">1</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button id="start-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex-1">
+                        Start Game
+                    </button>
+                    <button id="pause-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded hidden">
+                        Pause
+                    </button>
+                </div>
+                
+                <div id="game-over" class="hidden bg-gray-800 p-4 rounded text-center">
+                    <h2 class="text-2xl font-bold text-red-500 mb-2">Game Over!</h2>
+                    <button id="restart-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Play Again
+                    </button>
+                </div>
+
+                <div id="paused" class="hidden bg-gray-800 p-4 rounded text-center">
+                    <h2 class="text-2xl font-bold text-yellow-500 mb-2">Paused</h2>
+                    <button id="resume-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Resume
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-gray-400 text-sm">
+            <p>Controls: ← → ↓ to move, ↑ to rotate, Space to drop, P to pause</p>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
