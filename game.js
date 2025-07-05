@@ -1,8 +1,14 @@
-  // Game constants
+ // Game constants
         const COLS = 10;
-        const ROWS = 15;
-        const BLOCK_SIZE = 30;
+        const ROWS = 20;
         const EMPTY = ' ';
+        
+        // Difficulty settings
+        const DIFFICULTY = {
+            easy: { speed: 1000, level: 1, name: "Easy" },
+            medium: { speed: 600, level: 2, name: "Medium" },
+            hard: { speed: 300, level: 3, name: "Hard" }
+        };
         
         // Tetromino shapes
         const SHAPES = [
@@ -22,23 +28,28 @@
         let currentX = 0;
         let currentY = 0;
         let score = 0;
-        let level = 1;
+        let highScore = localStorage.getItem('tetrisHighScore') || 0;
         let gameOver = false;
         let paused = false;
-        let dropInterval = 1000;
+        let dropInterval = DIFFICULTY.easy.speed;
         let gameInterval = null;
+        let currentDifficulty = 'easy';
         
         // DOM elements
         const gameGrid = document.getElementById('game-grid');
         const nextPieceGrid = document.getElementById('next-piece-grid');
         const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
+        const highScoreElement = document.getElementById('high-score');
+        const finalScoreElement = document.getElementById('final-score');
+        const finalHighScoreElement = document.getElementById('final-high-score');
+        const difficultySelect = document.getElementById('difficulty');
         const startBtn = document.getElementById('start-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const resumeBtn = document.getElementById('resume-btn');
         const gameOverElement = document.getElementById('game-over');
         const pausedElement = document.getElementById('paused');
         const restartBtn = document.getElementById('restart-btn');
+        const touchControls = document.getElementById('touch-controls');
         
         // Initialize the game grid
         function createGrid() {
@@ -100,13 +111,13 @@
         function startGame() {
             grid = createGrid();
             score = 0;
-            level = 1;
             gameOver = false;
             paused = false;
-            dropInterval = 1000;
+            currentDifficulty = difficultySelect.value;
+            dropInterval = DIFFICULTY[currentDifficulty].speed;
             
             scoreElement.textContent = score;
-            levelElement.textContent = level;
+            highScoreElement.textContent = highScore;
             
             currentPiece = randomPiece();
             nextPiece = randomPiece();
@@ -120,12 +131,20 @@
             pausedElement.classList.add('hidden');
             startBtn.classList.add('hidden');
             pauseBtn.classList.remove('hidden');
+            difficultySelect.disabled = true;
             
             if (gameInterval) {
                 clearInterval(gameInterval);
             }
             
             gameInterval = setInterval(moveDown, dropInterval);
+            
+            // Show touch controls on mobile
+            if (window.innerWidth <= 768) {
+                touchControls.style.display = 'block';
+            } else {
+                touchControls.style.display = 'none';
+            }
         }
         
         // Pause the game
@@ -227,12 +246,31 @@
             
             // Check if game over
             if (!isValidMove(currentPiece, 0, 0)) {
-                gameOver = true;
-                clearInterval(gameInterval);
-                gameOverElement.classList.remove('hidden');
-                startBtn.classList.remove('hidden');
-                pauseBtn.classList.add('hidden');
+                endGame();
             }
+        }
+        
+        // End the game
+        function endGame() {
+            gameOver = true;
+            clearInterval(gameInterval);
+            
+            // Update high score if needed
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('tetrisHighScore', highScore);
+                highScoreElement.textContent = highScore;
+            }
+            
+            // Update final score display
+            finalScoreElement.textContent = `Score: ${score}`;
+            finalHighScoreElement.textContent = `High Score: ${highScore}`;
+            
+            gameOverElement.classList.remove('hidden');
+            startBtn.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            difficultySelect.disabled = false;
+            touchControls.style.display = 'none';
         }
         
         // Check for completed lines
@@ -253,19 +291,12 @@
             if (linesCleared > 0) {
                 // Update score
                 const points = [0, 40, 100, 300, 1200]; // Points for 0, 1, 2, 3, 4 lines
-                score += points[linesCleared] * level;
+                score += points[linesCleared] * DIFFICULTY[currentDifficulty].level;
                 scoreElement.textContent = score;
                 
-                // Update level every 10 lines
-                const newLevel = Math.floor(score / 1000) + 1;
-                if (newLevel > level) {
-                    level = newLevel;
-                    levelElement.textContent = level;
-                    
-                    // Increase speed
-                    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
-                    clearInterval(gameInterval);
-                    gameInterval = setInterval(moveDown, dropInterval);
+                // Update high score display if needed
+                if (score > highScore) {
+                    highScoreElement.textContent = score;
                 }
             }
         }
@@ -334,6 +365,43 @@
             }
         }
         
+        // Initialize touch controls
+        function initTouchControls() {
+            document.getElementById('touch-left').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveLeft();
+            });
+            
+            document.getElementById('touch-right').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveRight();
+            });
+            
+            document.getElementById('touch-down').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveDown();
+            });
+            
+            document.getElementById('touch-rotate').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                rotatePiece();
+            });
+            
+            document.getElementById('touch-drop').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                hardDrop();
+            });
+            
+            document.getElementById('touch-pause').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (paused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
+            });
+        }
+        
         // Event listeners
         document.addEventListener('keydown', (e) => {
             if (gameOver && e.key !== 'Enter') return;
@@ -376,9 +444,15 @@
         resumeBtn.addEventListener('click', resumeGame);
         
         // Initialize the game
+        highScoreElement.textContent = highScore;
         drawGrid();
-
-        // Iframe detection and styling
-        if (window.self !== window.top) {
-            document.body.classList.add('iframe-mode');
-        }
+        initTouchControls();
+        
+        // Check screen size on resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768 && !gameOver && !paused) {
+                touchControls.style.display = 'block';
+            } else {
+                touchControls.style.display = 'none';
+            }
+        });

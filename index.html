@@ -2,97 +2,211 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tailwind Tetris</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enhanced Tetris</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            overflow: hidden;
+        body{
+            overflow: hidden; /* Prevent scrolling */
         }
+        /* Base cell size that scales down on mobile */
         .cell {
-            width: 30px;
-            height: 30px;
+            width: clamp(15px, 4vmin, 30px);
+            height: clamp(15px, 4vmin, 30px);
             border: 1px solid #333;
             box-sizing: border-box;
         }
         
+        /* Main grid dimensions */
         .grid {
             display: grid;
-            grid-template-rows: repeat(15, 30px);
-            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(20, clamp(15px, 4vmin, 30px));
+            grid-template-columns: repeat(10, clamp(15px, 4vmin, 30px));
             gap: 1px;
+        }
+        
+        /* Next piece grid */
+        #next-piece-grid {
+            grid-template-rows: repeat(4, clamp(15px, 4vmin, 30px)) !important;
+            grid-template-columns: repeat(4, clamp(15px, 4vmin, 30px)) !important;
         }
         
         .hidden {
             display: none;
         }
         
+        /* Game container layout */
         .game-container {
-            width: fit-content;
-            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            max-width: 100%;
         }
         
-        /* For iframe embedding */
-        body.iframe-mode {
-            padding: 0;
-            margin: 0;
+        .game-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 100%;
         }
-        body.iframe-mode .game-container {
+        
+        .game-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 150px;
+        }
+        
+        /* Mobile layout adjustments */
+        @media (max-width: 640px) {
+            .game-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .controls-hint {
+                font-size: 12px;
+            }
+        }
+        
+        /* Touch controls overlay for mobile */
+        #touch-controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            z-index: 100;
+            touch-action: manipulation;
+        }
+        
+        .touch-btn {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            user-select: none;
+        }
+        
+        /* Difficulty indicator */
+        .difficulty-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .easy { background-color: #22c55e; }
+        .medium { background-color: #eab308; }
+        .hard { background-color: #ef4444; }
+        
+        /* Game panels */
+        .panel {
+            background-color: #1f2937;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .game-button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
             width: 100%;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-2">
     <div class="game-container">
-        <h1 class="text-4xl font-bold mb-6 text-center">Tailwind Tetris</h1>
+        <h1 class="text-3xl sm:text-4xl font-bold mb-4 sm:mb-6 text-center">Enhanced Tetris</h1>
         
-        <div class="flex gap-8 items-start">
+        <div class="game-wrapper">
+            <!-- Left Column - Game Grid -->
             <div class="grid bg-gray-800" id="game-grid"></div>
             
-            <div class="flex flex-col gap-6">
-                <div class="bg-gray-800 p-4 rounded">
-                    <h2 class="text-xl font-semibold mb-2">Next Piece</h2>
-                    <div class="grid bg-gray-800" id="next-piece-grid" style="grid-template-rows: repeat(4, 30px); grid-template-columns: repeat(4, 30px);"></div>
+            <!-- Middle Column - Game Info -->
+            <div class="game-column">
+                <div class="panel">
+                    <h2 class="text-lg font-semibold mb-2">Next Piece</h2>
+                    <div class="grid bg-gray-800 mx-auto" id="next-piece-grid"></div>
                 </div>
                 
-                <div class="bg-gray-800 p-4 rounded">
-                    <h2 class="text-xl font-semibold mb-2">Score</h2>
-                    <p class="text-2xl" id="score">0</p>
+                <div class="panel">
+                    <h2 class="text-lg font-semibold mb-2">Score</h2>
+                    <p class="text-xl" id="score">0</p>
                 </div>
                 
-                <div class="bg-gray-800 p-4 rounded">
-                    <h2 class="text-xl font-semibold mb-2">Level</h2>
-                    <p class="text-2xl" id="level">1</p>
+                <div class="panel">
+                    <h2 class="text-lg font-semibold mb-2">High Score</h2>
+                    <p class="text-xl" id="high-score">0</p>
+                </div>
+            </div>
+            
+            <!-- Right Column - Controls -->
+            <div class="game-column control-panel">
+                <div class="panel">
+                    <h2 class="text-lg font-semibold mb-2">Difficulty</h2>
+                    <select id="difficulty" class="w-full bg-gray-700 text-white rounded p-2 text-sm">
+                        <option value="easy"><span class="difficulty-indicator easy"></span> Easy</option>
+                        <option value="medium"><span class="difficulty-indicator medium"></span> Medium</option>
+                        <option value="hard"><span class="difficulty-indicator hard"></span> Hard</option>
+                    </select>
                 </div>
                 
-                <div class="flex gap-2">
-                    <button id="start-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex-1">
-                        Start Game
-                    </button>
-                    <button id="pause-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded hidden">
-                        Pause
-                    </button>
-                </div>
+                <button id="start-btn" class="game-button bg-green-600 hover:bg-green-700">
+                    Start Game
+                </button>
+                <button id="pause-btn" class="game-button bg-yellow-600 hover:bg-yellow-700 hidden">
+                    Pause
+                </button>
                 
-                <div id="game-over" class="hidden bg-gray-800 p-4 rounded text-center">
-                    <h2 class="text-2xl font-bold text-red-500 mb-2">Game Over!</h2>
-                    <button id="restart-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <div id="game-over" class="panel hidden text-center">
+                    <h2 class="text-xl font-bold text-red-500 mb-2">Game Over!</h2>
+                    <p class="mb-2" id="final-score">Score: 0</p>
+                    <p class="mb-4" id="final-high-score">High Score: 0</p>
+                    <button id="restart-btn" class="game-button bg-blue-600 hover:bg-blue-700">
                         Play Again
                     </button>
                 </div>
 
-                <div id="paused" class="hidden bg-gray-800 p-4 rounded text-center">
-                    <h2 class="text-2xl font-bold text-yellow-500 mb-2">Paused</h2>
-                    <button id="resume-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                <div id="paused" class="panel hidden text-center">
+                    <h2 class="text-xl font-bold text-yellow-500 mb-2">Paused</h2>
+                    <button id="resume-btn" class="game-button bg-green-600 hover:bg-green-700">
                         Resume
                     </button>
                 </div>
             </div>
         </div>
         
-        <div class="mt-4 text-gray-400 text-sm">
-            <p>Controls: ← → ↓ to move, ↑ to rotate, Space to drop, P to pause</p>
+        <div class="controls-hint mt-0.2 text-gray-400 text-xs text-right ml-auto">
+            <p>Controls: ← → ↓ move, ↑ rotate, Space drop, P pause</p>
         </div>
+    </div>
+    
+    <!-- Mobile Touch Controls -->
+    <div id="touch-controls">
+        <div class="touch-btn" id="touch-left" style="left: 15%; bottom: 30%; width: 60px; height: 60px;">←</div>
+        <div class="touch-btn" id="touch-right" style="right: 15%; bottom: 30%; width: 60px; height: 60px;">→</div>
+        <div class="touch-btn" id="touch-down" style="left: 50%; bottom: 10%; transform: translateX(-50%); width: 60px; height: 60px;">↓</div>
+        <div class="touch-btn" id="touch-rotate" style="left: 50%; bottom: 60%; transform: translateX(-50%); width: 60px; height: 60px;">↑</div>
+        <div class="touch-btn" id="touch-drop" style="right: 10%; bottom: 70%; width: 80px; height: 40px; border-radius: 20px;">DROP</div>
+        <div class="touch-btn" id="touch-pause" style="left: 10%; bottom: 70%; width: 80px; height: 40px; border-radius: 20px;">PAUSE</div>
     </div>
 
     <script src="game.js"></script>
